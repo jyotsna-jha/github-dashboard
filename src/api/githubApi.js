@@ -1,5 +1,5 @@
 const USERNAME = "jyotsna-jha";
-const TOKEN = "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"; // 👈 Get from GitHub Settings
+const TOKEN = import.meta.env.VITE_GITHUB_TOKEN; // 👈 for Vite
 
 export async function fetchGitHubActivity() {
   try {
