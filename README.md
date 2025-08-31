@@ -19,13 +19,6 @@ A personal activity dashboard that tracks your **GitHub coding streak, weekly co
 - 🚀 **Vite + React + Redux** – Blazing fast performance
 
 ---
-
-## 🖼️ Preview
-
-![Dashboard Preview](https://i.imgur.com/8kq0FzL.png)
-
-*(Example with sample data — yours will show YOUR activity!)*
-
 ---
 
 ## 🛠️ Tech Stack
