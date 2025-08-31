@@ -1,8 +1,7 @@
-# 🚀 Jyotsna's Dev Dashboard
+# 🚀 Your Dev Dashboard
 
-A personal activity dashboard that tracks my **GitHub coding streak, weekly commits, and recent activity** — built with React, Redux, and Recharts.
+A personal activity dashboard that tracks your **GitHub coding streak, weekly commits, and recent activity** — built with React, Redux, and Recharts.
 
-![Dashboard Screenshot](./public/screenshot.png)
 
 > Live, real-time insight into your developer journey — because every commit counts.
 
