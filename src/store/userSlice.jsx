@@ -6,6 +6,7 @@ const userSlice = createSlice({
     data: null,
     loading: false,
     error: null,
+    weeklyGoal: 5, // 👈 Default goal: 5 commits/week
   },
   reducers: {
     setLoading: (state) => {
@@ -20,8 +21,14 @@ const userSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+    // ✅ Add this reducer
+    setWeeklyGoal: (state, action) => {
+      state.weeklyGoal = action.payload; // action.payload = number
+    },
   },
 });
 
-export const { setLoading, setData, setError } = userSlice.actions;
+// ✅ Now you can export it
+export const { setLoading, setData, setError, setWeeklyGoal } = userSlice.actions;
+
 export default userSlice.reducer;

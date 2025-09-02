@@ -1,20 +1,18 @@
 // src/components/Header.jsx
-
 import React from "react";
 
-export default function Header({ todayCommits = 0 }) {
-  // Get current hour in 24-hour format (UTC-safe)
+export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggleDarkMode }) {
+  // Get current hour in 24-hour format
   const currentHour = new Date().getHours();
 
   // Determine mood emoji based on activity
-  let moodEmoji = "😴"; // default: inactive
+  let moodEmoji = "😴";
   let moodLabel = "Sleeping";
 
   if (todayCommits > 5) {
     moodEmoji = "🚀";
     moodLabel = "On Fire!";
   } else if (currentHour >= 22 || currentHour <= 5) {
-    // Night owl: 10 PM to 5 AM
     moodEmoji = "🌙";
     moodLabel = "Night Coder";
   } else if (todayCommits > 0) {
@@ -22,37 +20,157 @@ export default function Header({ todayCommits = 0 }) {
     moodLabel = "In Flow";
   }
 
+  // Smooth scroll to section
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="relative mt-4 mb-8 px-4">
-      {/* Main heading container */}
-      <div className="relative inline-block">
-        <div className="absolute -inset-2 bg-blue-500/10 blur-lg rounded-lg scale-95"></div>
-        <h1 className="relative text-xl md:text-2xl font-medium font-poppins py-2 tracking-wide text-white flex items-center gap-2">
-          Jyotsna's{" "}
-          <span className="font-semibold text-blue-400">Dev Dashboard</span>
-          <span
-            className="text-lg md:text-xl animate-bounce"
-            role="img"
-            aria-label={moodLabel}
-            style={{ animationDelay: "0.5s" }}
-          >
-            {moodEmoji}
-          </span>
-        </h1>
+    <header className="w-full min-w-full relative bg-transparent mt-0">
+      {/* Subtle animated background elements */}
+      <div className="absolute inset-0 opacity-5 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-500 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute top-0 right-1/4 w-24 h-24 bg-cyan-400 rounded-full blur-2xl animate-pulse delay-1000"></div>
       </div>
+      
+      <div className="relative z-10 w-full px-4 sm:px-6"> {/* Reduced padding from py-8 to py-4 */}
+        {/* Main header content */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-30 w-full">
+          
+          {/* Left section - Title and mood */}
+          <div className="flex items-center justify-between lg:justify-start flex-shrink-0">
+            <div className="flex items-center group">
+              <div className="relative">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                  DevFlow{' '}
+                  <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent animate-pulse">
+                    Analytics
+                  </span>
+                </h1>
+              </div>
+              
+              {/* Mood indicator with enhanced styling - Commented out for now */}
+              {/* <div className="ml-5 flex flex-col items-center flex-shrink-0">
+                <span
+                  className="text-2xl sm:text-3xl transform transition-transform duration-300 cursor-default filter drop-shadow-lg"
+                  role="img"
+                  aria-label={moodLabel}
+                  title={moodLabel}
+                >
+                  {moodEmoji}
+                </span>
+                <span className="text-xs text-blue-400 font-semibold mt-1 tracking-wider whitespace-nowrap">
+                  {moodLabel}
+                </span>
+              </div> */}
+            </div>
+          </div>
 
-      {/* Subtitle */}
-      <p className="mt-1 text-sm font-poppins text-gray-400 max-w-md mx-auto leading-relaxed">
-        Tracking my{" "}
-        <span className="font-medium text-blue-400">GitHub</span> activity in real time
-      </p>
+          {/* Center navigation - Clean link design */}
+          <nav className="flex justify-center flex-grow">
+            <div className="flex items-center space-x-8 p-3 rounded-2xl bg-transparent backdrop-blur-sm">
+              {[
+                { id: "stats", label: "Status Cards" },
+                { id: "weekly-activity", label: "Weekly Activity" },
+                { id: "recent-activity", label: "Recent Activity" },
+                { id: "goal-tracker", label: "Weekly Goals" }
+              ].map((item) => (
+                <a
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="group relative px-2 py-2 text-sm font-medium text-gray-300 hover:text-white transition-all duration-300 cursor-pointer  focus:outline-none focus:ring-0"
+                >
+                  <span className="hidden sm:inline">{item.label}</span>
+                </a>
+              ))}
+            </div>
+          </nav>
 
-      {/* Decorative elements */}
-      <div className="absolute top-0 right-6 w-3 h-3 rounded-full bg-blue-500/40 animate-pulse"></div>
-      <div className="absolute bottom-2 left-8 w-2 h-2 rounded-full bg-purple-500/30"></div>
+          {/* Right section - Action buttons with notification and profile */}
+          <div className="flex items-center justify-center lg:justify-end space-x-4 flex-shrink-0">
+            {/* Dark mode toggle with clean styling */}
+            <button
+              onClick={onToggleDarkMode}
+              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {darkMode ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
 
-      {/* Subtle grid background effect */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-gray-900/50 to-gray-900/20 backdrop-blur-xs rounded-lg"></div>
-    </div>
+            {/* Refresh button with icon only */}
+            <button
+              onClick={onRefresh}
+              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              aria-label="Refresh data"
+            >
+              <svg
+                className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+
+            {/* Notification bell icon */}
+            <button
+              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              aria-label="Notifications"
+            >
+              <svg
+                className="w-5 h-5 transition-transform duration-300 group-hover:animate-pulse"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+              {/* Notification dot */}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            </button>
+
+            {/* Profile image */}
+            <div className="relative ml-2">
+              <button
+                className="group relative rounded-full overflow-hidden transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+                aria-label="Profile menu"
+              >
+                <img
+                  src="https://avatars.githubusercontent.com/u/1?v=4"
+                  alt="Profile"
+                  className="w-10 h-10 object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                {/* Online status indicator */}
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      
+      </div>
+    </header>
   );
 }

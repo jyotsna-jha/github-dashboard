@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading, setData, setError } from "./store/userSlice";
 import { fetchAllGitHubData } from "./api/githubApi";
+import GoalTracker from "./components/GoalTracker";
 import {
   formatWeeklyCommits,
   getCurrentStreak,
@@ -45,6 +46,19 @@ const DebugInfo = ({ data, rawEvents }) => {
   const todayPushEvents = todayEvents.filter(
     (event) => event.type === "PushEvent"
   );
+
+  useEffect(() => {
+  const lastCommitDate = new Date(data?.lastEvent || 0);
+  const today = new Date();
+  const daysSinceLastCommit = Math.floor((today - lastCommitDate) / (1000 * 60 * 60 * 24));
+
+  if (daysSinceLastCommit >= 2) {
+    console.log("🔔 You haven't coded in 2 days!");
+    // Show toast or alert
+    alert("⚠️ You haven't coded in 2 days! Time to get back on track.");
+  }
+}, [data]);
+
 
   return (
     <div className="fixed bottom-4 left-4 bg-black/95 text-white p-4 rounded-lg text-xs max-w-lg max-h-96 overflow-auto z-50 shadow-2xl border border-gray-600">
@@ -132,7 +146,7 @@ export default function App() {
 
   // New state for interactivity
   const [activeStatCard, setActiveStatCard] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Default to dark mode
   const [showAllActivity, setShowAllActivity] = useState(false);
 
   // Add state to store raw events for debugging
@@ -279,16 +293,16 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center p-8 bg-gray-800 rounded-2xl shadow-lg">
           <div className="text-6xl mb-4">😞</div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-white mb-2">
             Oops! Something went wrong
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-400 mb-4">{error}</p>
           <button
             onClick={handleRefresh}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
           >
             Try Again
           </button>
@@ -298,51 +312,18 @@ export default function App() {
   }
 
   return (
-    <div
-      className={`min-h-screen transition-all duration-500 ${
-        darkMode ? "dark" : ""
-      }`}
-    >
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className={`min-h-screen transition-all duration-500 bg-gray-900`}>
+      <div className="min-h-screen bg-gray-900">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
           {/* Enhanced Header with controls */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <Header todayCommits={data?.todayCommits || 0} />{" "}
-              {/*  {data?.avatarUrl && (
-                <img 
-                  src={data.avatarUrl} 
-                  alt="Profile" 
-                  className="w-16 h-16 rounded-full border-4 border-white dark:border-gray-700 shadow-lg"
-                />
-              )} */}
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-3 rounded-xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200 dark:border-gray-700"
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="group relative p-3 rounded-full border border-[#2e86de]/30 hover:border-[#2e86de] bg-transparent hover:bg-[#2e86de]/5 transition-all duration-300 overflow-hidden"
-              >
-                <svg
-                  className="w-5 h-5 text-[#2e86de] group-hover:rotate-180 transition-transform duration-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <div className="absolute inset-0 rounded-full bg-[#2e86de]/20 scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-              </button>
+              <Header 
+                todayCommits={data?.todayCommits || 0} 
+                onRefresh={handleRefresh}
+                darkMode={darkMode}
+                onToggleDarkMode={() => setDarkMode(!darkMode)}
+              />
             </div>
           </div>
 
@@ -352,7 +333,7 @@ export default function App() {
           {/* Enhanced Stats Cards with flowing layout */}
           <div className="relative mb-24">
             {/* Background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#2e86de]/5 via-transparent to-[#2e86de]/5 rounded-3xl blur-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/5 via-transparent to-blue-900/5 rounded-3xl blur-3xl"></div>
 
             <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
               <StatCard
@@ -420,19 +401,20 @@ export default function App() {
                 }
                 isActive={activeStatCard === "activity"}
               />
+              <GoalTracker />
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Chart Section */}
             <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+              <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 mb-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+                  <h2 className="text-2xl font-semibold text-white">
                     Weekly Activity
                   </h2>
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-2 text-sm text-gray-400">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -449,7 +431,7 @@ export default function App() {
                       <span>Last 7 days</span>
                     </div>
                     {data?.totalCommits > 0 && (
-                      <div className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full">
+                      <div className="text-sm bg-blue-900 text-blue-200 px-3 py-1 rounded-full">
                         {data.totalCommits} total commits
                       </div>
                     )}
@@ -464,15 +446,15 @@ export default function App() {
 
             {/* Activity Feed */}
             <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8">
+              <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 sticky top-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  <h2 className="text-xl font-semibold text-white">
                     Recent Activity
                   </h2>
                   {data?.recent && data.recent.length > 5 && (
                     <button
                       onClick={() => setShowAllActivity(!showAllActivity)}
-                      className="text-blue-500 hover:text-blue-600 text-sm font-medium transition-colors duration-200"
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors duration-200"
                     >
                       {showAllActivity ? "Show Less" : "Show All"}
                     </button>
@@ -491,15 +473,15 @@ export default function App() {
 
               {/* Additional Profile Info */}
               {(data?.bio || data?.location || data?.company) && (
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mt-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 mt-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">
                     Profile Info
                   </h3>
                   <div className="space-y-3">
                     {data.bio && (
                       <div className="flex items-start space-x-2">
                         <span className="text-gray-400">💭</span>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           {data.bio}
                         </p>
                       </div>
@@ -507,7 +489,7 @@ export default function App() {
                     {data.location && (
                       <div className="flex items-center space-x-2">
                         <span className="text-gray-400">📍</span>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           {data.location}
                         </p>
                       </div>
@@ -515,7 +497,7 @@ export default function App() {
                     {data.company && (
                       <div className="flex items-center space-x-2">
                         <span className="text-gray-400">🏢</span>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           {data.company}
                         </p>
                       </div>
@@ -523,7 +505,7 @@ export default function App() {
                     {data.joinedDate && (
                       <div className="flex items-center space-x-2">
                         <span className="text-gray-400">📅</span>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           Joined GitHub in {data.joinedDate}
                         </p>
                       </div>
@@ -538,44 +520,44 @@ export default function App() {
           <div className="mt-12 text-center">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-2xl font-bold text-white">
                   {data?.totalStars || 0}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Total Stars
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-2xl font-bold text-white">
                   {data?.totalForks || 0}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Total Forks
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-2xl font-bold text-white">
                   {data?.languagesUsed || 0}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Languages
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-2xl font-bold text-white">
                   {data?.originalRepos || 0}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Original Repos
                 </p>
               </div>
             </div>
 
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm">
               Powered by GitHub API • Updated in real-time • Built with ❤️
             </p>
             {data?.lastUpdate && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Last updated: {new Date(data.lastUpdate).toLocaleString()}
               </p>
             )}
