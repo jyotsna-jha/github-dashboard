@@ -1,57 +1,121 @@
+import { motion } from "framer-motion";
+
 export default function StatCard({ title, value, subtitle, icon, trend, onClick, isActive }) {
+  // Calculate progress percentage for circular progress (assuming max 100 for demo)
+  const progressPercentage = Math.min((parseInt(value) / 100) * 100, 100);
+  const circumference = 2 * Math.PI * 45; // radius = 45
+  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
   return (
-    <div 
-      className={`group relative p-6 rounded-3xl transition-all duration-500 cursor-pointer overflow-hidden ${
-        isActive 
-          ? 'bg-gradient-to-br from-[#2e86de]/10 via-[#2e86de]/5 to-transparent scale-105' 
-          : 'bg-gradient-to-br from-white/60 via-white/40 to-transparent dark:from-gray-800/60 dark:via-gray-800/40 hover:from-[#2e86de]/5 hover:via-[#2e86de]/3'
-      } backdrop-blur-sm hover:scale-102 transform`}
+    <motion.div 
+      className={`group cursor-pointer p-6 border border-gray-700 rounded-xl bg-gray-900/50 backdrop-blur-sm transition-all duration-300 ${
+        isActive ? 'border-[#2e86de] shadow-lg shadow-[#2e86de]/20' : 'hover:border-gray-600'
+      }`}
       onClick={onClick}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ y: -2 }}
     >
-      {/* Animated background glow */}
-      <div className={`absolute inset-0 bg-gradient-to-r from-[#2e86de]/0 via-[#2e86de]/10 to-[#2e86de]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${isActive ? 'opacity-50' : ''}`}></div>
-      
-      {/* Floating icon */}
-      <div className="absolute top-4 right-4 text-4xl opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-300 group-hover:rotate-12">
-        {icon}
-      </div>
-      
-      {/* Active indicator */}
-      {isActive && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2e86de] to-[#1e6fb8]"></div>
-      )}
-      
-      <div className="relative z-10">
-        <div className="flex items-center space-x-2 mb-2">
-          <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${isActive ? 'bg-[#2e86de] animate-pulse' : 'bg-gray-400 group-hover:bg-[#2e86de]'}`}></div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#2e86de] transition-colors duration-300">
-            {title}
-          </p>
-        </div>
-        
-        <p className={`text-3xl font-bold mb-2 transition-all duration-300 ${
-          isActive 
-            ? 'text-[#2e86de] scale-105' 
-            : 'text-gray-900 dark:text-white group-hover:text-[#2e86de]'
-        }`}>
-          {value}
-        </p>
-        
-        {subtitle && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
-            {subtitle}
-          </p>
-        )}
-        
-        {trend > 0 && (
-          <div className="flex items-center space-x-1 group-hover:scale-105 transition-transform duration-300">
-            <svg className="w-4 h-4 text-[#2e86de] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <span className="text-sm text-[#2e86de] font-semibold">+{trend}%</span>
+      {/* Header with icon and title */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className={`text-xl ${isActive ? 'text-[#2e86de]' : 'text-gray-400 group-hover:text-[#2e86de]'} transition-colors duration-300`}>
+            {icon}
           </div>
-        )}
+          <div>
+            <h3 className={`font-semibold ${isActive ? 'text-[#2e86de]' : 'text-white group-hover:text-[#2e86de]'} transition-colors duration-300`}>
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="text-sm text-gray-400">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Main content area */}
+      <div className="flex items-center justify-between">
+        
+        {/* Large value */}
+        <motion.div 
+          className={`text-4xl font-bold ${isActive ? 'text-[#2e86de]' : 'text-white group-hover:text-[#2e86de]'} transition-colors duration-300`}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {value}
+        </motion.div>
+
+        {/* Circular progress indicator */}
+        <div className="relative w-20 h-20">
+          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+            {/* Background circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="currentColor"
+              strokeWidth="6"
+              fill="transparent"
+              className="text-gray-700"
+            />
+            {/* Progress circle */}
+            <motion.circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="currentColor"
+              strokeWidth="6"
+              fill="transparent"
+              strokeLinecap="round"
+              className={isActive ? 'text-[#2e86de]' : 'text-orange-500 group-hover:text-[#2e86de]'}
+              style={{
+                strokeDasharray: circumference,
+              }}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: strokeDashoffset }}
+              transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+            />
+          </svg>
+          
+          {/* Center content */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <motion.span 
+              className={`text-lg font-bold ${isActive ? 'text-[#2e86de]' : 'text-white group-hover:text-[#2e86de]'} transition-colors duration-300`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 1.2 }}
+            >
+              {Math.round(progressPercentage)}%
+            </motion.span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom section with trend */}
+      {trend > 0 && (
+        <motion.div 
+          className="mt-4 pt-4 border-t border-gray-700"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.8 }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-400">Growth</span>
+            <div className={`flex items-center space-x-1 text-sm font-medium ${
+              isActive ? 'text-[#2e86de]' : 'text-green-400 group-hover:text-[#2e86de]'
+            } transition-colors duration-300`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
+              </svg>
+              <span>+{trend}%</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }

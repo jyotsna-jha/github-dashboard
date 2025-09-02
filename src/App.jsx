@@ -23,7 +23,7 @@ import QuickStats from "./components/QuickStats";
 // Debug Component
 const DebugInfo = ({ data, rawEvents }) => {
   const [showDebug, setShowDebug] = useState(false);
-  
+
   if (!showDebug) {
     return (
       <button
@@ -36,51 +36,60 @@ const DebugInfo = ({ data, rawEvents }) => {
   }
 
   const todayStr = new Date().toDateString();
-  const todayEvents = rawEvents?.filter(event => {
-    const eventDate = new Date(event.created_at);
-    return eventDate.toDateString() === todayStr;
-  }) || [];
+  const todayEvents =
+    rawEvents?.filter((event) => {
+      const eventDate = new Date(event.created_at);
+      return eventDate.toDateString() === todayStr;
+    }) || [];
 
-  const todayPushEvents = todayEvents.filter(event => event.type === 'PushEvent');
+  const todayPushEvents = todayEvents.filter(
+    (event) => event.type === "PushEvent"
+  );
 
   return (
     <div className="fixed bottom-4 left-4 bg-black/95 text-white p-4 rounded-lg text-xs max-w-lg max-h-96 overflow-auto z-50 shadow-2xl border border-gray-600">
       <div className="flex justify-between items-center mb-3">
         <h4 className="font-bold text-yellow-400">🐛 GitHub Data Debug</h4>
-        <button 
+        <button
           onClick={() => setShowDebug(false)}
           className="text-red-400 hover:text-red-300 text-lg"
         >
           ✕
         </button>
       </div>
-      
+
       <div className="space-y-3">
         <div className="border-b border-gray-600 pb-2">
-          <div className="font-semibold text-blue-400">📅 Today ({todayStr}):</div>
+          <div className="font-semibold text-blue-400">
+            📅 Today ({todayStr}):
+          </div>
           <div className="ml-2 text-green-400">
-            {todayEvents.length} total events, {todayPushEvents.length} push events
+            {todayEvents.length} total events, {todayPushEvents.length} push
+            events
           </div>
           {todayPushEvents.map((event, i) => (
             <div key={i} className="ml-4 text-xs text-gray-300">
-              • {event.repo?.name}: {event.payload?.size || 1} commits at {new Date(event.created_at).toLocaleTimeString()}
+              • {event.repo?.name}: {event.payload?.size || 1} commits at{" "}
+              {new Date(event.created_at).toLocaleTimeString()}
             </div>
           ))}
         </div>
-        
+
         <div className="border-b border-gray-600 pb-2">
           <div className="font-semibold text-blue-400">📊 Processed Data:</div>
           <div className="ml-2">Total Events: {rawEvents?.length || 0}</div>
           <div className="ml-2">Weekly Commits: {data?.totalCommits || 0}</div>
           <div className="ml-2">Current Streak: {data?.streak || 0} days</div>
-          <div className="ml-2">This Week Events: {data?.totalEventsThisWeek || 0}</div>
+          <div className="ml-2">
+            This Week Events: {data?.totalEventsThisWeek || 0}
+          </div>
         </div>
-        
+
         <div className="border-b border-gray-600 pb-2">
           <div className="font-semibold text-blue-400">⏰ Latest Events:</div>
           {rawEvents?.slice(0, 3).map((event, i) => (
             <div key={i} className="ml-2 text-xs text-gray-300">
-              • {event.type} → {event.repo?.name} 
+              • {event.type} → {event.repo?.name}
               <br />
               <span className="text-gray-400 ml-2">
                 {new Date(event.created_at).toLocaleString()}
@@ -88,14 +97,18 @@ const DebugInfo = ({ data, rawEvents }) => {
             </div>
           ))}
         </div>
-        
+
         <div>
           <div className="font-semibold text-blue-400">📈 Weekly Chart:</div>
           <div className="grid grid-cols-7 gap-1 mt-1">
             {data?.weekly?.map((day, i) => (
               <div key={i} className="text-center">
                 <div className="text-xs text-gray-400">{day.name}</div>
-                <div className={`text-xs font-bold ${day.commits > 0 ? 'text-green-400' : 'text-gray-500'}`}>
+                <div
+                  className={`text-xs font-bold ${
+                    day.commits > 0 ? "text-green-400" : "text-gray-500"
+                  }`}
+                >
                   {day.commits}
                 </div>
               </div>
@@ -121,7 +134,7 @@ export default function App() {
   const [activeStatCard, setActiveStatCard] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
-  
+
   // Add state to store raw events for debugging
   const [rawEvents, setRawEvents] = useState([]);
 
@@ -130,7 +143,7 @@ export default function App() {
 
     try {
       console.log("🔄 Loading GitHub data at:", new Date().toLocaleString());
-      
+
       // Use your existing API with enhanced data fetching
       const githubData = await fetchAllGitHubData();
       const { events, user, repos } = githubData;
@@ -143,24 +156,32 @@ export default function App() {
       console.log("📡 First 5 Events:", events?.slice(0, 5));
       console.log("👤 User Data:", user);
       console.log("📁 Repos Count:", repos?.length);
-      
-      // Check today's events specifically
+
+      // Check today's date
       const today = new Date().toDateString();
-      const todayEvents = events?.filter(event => {
-        const eventDate = new Date(event.created_at);
-        return eventDate.toDateString() === today;
-      }) || [];
-      
+      console.log("📅 Today's date:", today);
+
+      // Filter events from today
+      const todayEvents =
+        events?.filter((event) => {
+          const eventDate = new Date(event.created_at);
+          return eventDate.toDateString() === today;
+        }) || [];
+
       console.log(`📅 Today's Events (${today}):`, todayEvents);
-      
-      // Check recent push events specifically
-      const recentPushEvents = events?.filter(event => {
-        const eventDate = new Date(event.created_at);
-        const hoursSinceEvent = (new Date() - eventDate) / (1000 * 60 * 60);
-        return event.type === 'PushEvent' && hoursSinceEvent < 24;
-      }) || [];
-      
-      console.log("📦 Recent Push Events (last 24h):", recentPushEvents);
+
+      // Filter only PushEvents from today (actual commits)
+      const todayPushEvents = todayEvents.filter(
+        (event) => event.type === "PushEvent"
+      );
+
+      // Sum up the number of commits using payload.size
+      const todayCommits = todayPushEvents.reduce(
+        (sum, event) => sum + (event.payload?.size || 1),
+        0
+      );
+
+      console.log("📦 Today's commits count:", todayCommits);
 
       // Calculate all the dynamic statistics
       const activityStats = calculateActivityStats(events);
@@ -170,6 +191,7 @@ export default function App() {
       console.log("📈 Activity Stats:", activityStats);
       console.log("🏆 Repo Stats:", repoStats);
 
+      // Final formatted data
       const formattedData = {
         // Your existing formatted data
         weekly: formatWeeklyCommits(events),
@@ -215,10 +237,11 @@ export default function App() {
           ? new Date(user.created_at).getFullYear()
           : null,
         lastUpdate: user?.updated_at || null,
-        
+
         // Debug info
         totalRawEvents: events?.length || 0,
-        todayEventsCount: todayEvents.length,
+        todayEventsCount: todayEvents.length, // total events today
+        todayCommits, // 👈 New: actual commit count today
         lastEventDate: events?.[0]?.created_at || null,
       };
 
@@ -232,6 +255,11 @@ export default function App() {
 
   useEffect(() => {
     loadData();
+
+    // Set up interval for real-time updates (every 5 minutes)
+    const intervalId = setInterval(loadData, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch]);
 
   useEffect(() => {
@@ -280,7 +308,7 @@ export default function App() {
           {/* Enhanced Header with controls */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <Header />
+              <Header todayCommits={data?.todayCommits || 0} />{" "}
               {/*  {data?.avatarUrl && (
                 <img 
                   src={data.avatarUrl} 

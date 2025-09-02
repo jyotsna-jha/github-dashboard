@@ -6,9 +6,15 @@ const headers = {
   'Accept': 'application/vnd.github.v3+json'
 };
 
+// Add cache busting to prevent stale data
+const getCacheBustingUrl = (url) => {
+  const timestamp = new Date().getTime();
+  return `${url}${url.includes('?') ? '&' : '?'}_=${timestamp}`;
+};
+
 export async function fetchGitHubActivity() {
   try {
-    const res = await fetch(`https://api.github.com/users/${USERNAME}/events`, {
+    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}/events`), {
       headers
     });
 
@@ -28,7 +34,7 @@ export async function fetchGitHubActivity() {
 // New function to fetch user profile data
 export async function fetchGitHubUserData() {
   try {
-    const res = await fetch(`https://api.github.com/users/${USERNAME}`, {
+    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}`), {
       headers
     });
 
@@ -48,7 +54,7 @@ export async function fetchGitHubUserData() {
 // New function to fetch user repositories
 export async function fetchGitHubRepos() {
   try {
-    const res = await fetch(`https://api.github.com/users/${USERNAME}/repos?per_page=100&sort=updated`, {
+    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}/repos?per_page=100&sort=updated`), {
       headers
     });
 
