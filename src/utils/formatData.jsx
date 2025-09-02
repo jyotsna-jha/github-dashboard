@@ -54,48 +54,66 @@ export function formatWeeklyCommits(events) {
  * @param {Array} events - GitHub events
  * @returns {number} - Streak in days
  */
+/**
+ * Calculate current coding streak (consecutive days with at least one PushEvent)
+ * @param {Array} events - GitHub events
+ * @returns {number} - Streak in days
+ */
+/**
+ * Calculate current coding streak (consecutive days with at least one PushEvent)
+ * @param {Array} events - GitHub events
+ * @returns {number} - Streak in days
+ */
 export function getCurrentStreak(events) {
   if (!events || !Array.isArray(events)) return 0;
 
-  // Get current date in UTC
+  // Normalize a date to UTC 00:00:00 (start of day)
+  function getUTCDateOnly(date) {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  }
+
   const now = new Date();
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  
+  let currentDate = getUTCDateOnly(now); // Today at 00:00 UTC
+
+  // 🔁 Start from yesterday if today has no commit
+  const todayHasCommit = events.some((event) => {
+    if (event.type !== "PushEvent") return false;
+    const eventDate = new Date(event.created_at);
+    const eventUTC = getUTCDateOnly(eventDate);
+    return eventUTC.getTime() === currentDate.getTime();
+  });
+
+  // 📅 Start checking from yesterday if today has no commit
+  if (!todayHasCommit) {
+    console.log("🟡 No commit today. Starting streak from yesterday.");
+    currentDate = new Date(currentDate);
+    currentDate.setUTCDate(currentDate.getUTCDate() - 1); // Move to yesterday
+  } else {
+    console.log("✅ Commit today. Including today in streak.");
+  }
+
   let streak = 0;
-  let currentDate = new Date(today);
 
-  console.log("🔥 Calculating streak starting from:", currentDate.toDateString());
-
-  // Check last 100 days maximum
+  // Check up to 100 days back
   for (let i = 0; i < 100; i++) {
-    const dayStart = new Date(currentDate);
-    dayStart.setUTCHours(0, 0, 0, 0); // Start of day in UTC
-
-    const dayEnd = new Date(currentDate);
-    dayEnd.setUTCHours(23, 59, 59, 999); // End of day in UTC
-
-    const dayEvents = events.filter((event) => {
+    // Check if any PushEvent happened on this UTC day
+    const hasCommit = events.some((event) => {
       if (event.type !== "PushEvent") return false;
       const eventDate = new Date(event.created_at);
-      const eventUTCDate = new Date(Date.UTC(
-        eventDate.getUTCFullYear(), 
-        eventDate.getUTCMonth(), 
-        eventDate.getUTCDate()
-      ));
-      
-      // Check if event happened on this day
-      return eventUTCDate.getTime() === currentDate.getTime();
+      const eventUTC = getUTCDateOnly(eventDate);
+      return eventUTC.getTime() === currentDate.getTime();
     });
 
-    if (dayEvents.length > 0) {
+    if (hasCommit) {
       streak++;
-      console.log(`✅ Found ${dayEvents.length} commits on ${currentDate.toDateString()}`);
+      console.log(`✅ Commit found on ${currentDate.toISOString().split('T')[0]}`);
     } else {
-      console.log(`❌ No commits on ${currentDate.toDateString()}, streak ends`);
+      console.log(`❌ No commit on ${currentDate.toISOString().split('T')[0]}, streak ends`);
       break;
     }
 
-    // Move to previous day in UTC
+    // Move to previous day
+    currentDate = new Date(currentDate);
     currentDate.setUTCDate(currentDate.getUTCDate() - 1);
   }
 
