@@ -151,6 +151,8 @@ export default function App() {
 
   // Add state to store raw events for debugging
   const [rawEvents, setRawEvents] = useState([]);
+  // Add state to store user data separately
+  const [userData, setUserData] = useState(null);
 
   const loadData = async () => {
     dispatch(setLoading());
@@ -164,6 +166,8 @@ export default function App() {
 
       // Store raw events for debugging
       setRawEvents(events || []);
+      // Store user data for Header
+      setUserData(user || null);
 
       // Enhanced logging
       console.log("📡 Raw Events Count:", events?.length);
@@ -323,6 +327,7 @@ export default function App() {
                 onRefresh={handleRefresh}
                 darkMode={darkMode}
                 onToggleDarkMode={() => setDarkMode(!darkMode)}
+                userData={userData} // 👈 ADD THIS LINE
               />
             </div>
           </div>
@@ -401,9 +406,10 @@ export default function App() {
                 }
                 isActive={activeStatCard === "activity"}
               />
-              <GoalTracker />
             </div>
           </div>
+                        <GoalTracker />
+
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Chart Section */}

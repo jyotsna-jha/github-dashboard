@@ -1,7 +1,7 @@
 // src/components/Header.jsx
 import React from "react";
 
-export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggleDarkMode }) {
+export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggleDarkMode, userData }) {
   // Get current hour in 24-hour format
   const currentHour = new Date().getHours();
 
@@ -28,8 +28,11 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
     }
   };
 
+  // Get avatar URL from userData or fallback to default
+  const avatarUrl = userData?.avatar_url || "https://avatars.githubusercontent.com/u/1?v=4";
+
   return (
-    <header className="w-full min-w-full relative bg-transparent mt-0">
+    <header className="w-full min-w-full relative bg-transparent mt-0 mb-4">
       {/* Subtle animated background elements */}
       <div className="absolute inset-0 opacity-5 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-500 rounded-full blur-2xl animate-pulse"></div>
@@ -71,7 +74,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
 
           {/* Center navigation - Clean link design */}
           <nav className="flex justify-center flex-grow">
-            <div className="flex items-center space-x-8 p-3 rounded-2xl bg-transparent backdrop-blur-sm">
+            <div className="flex items-center space-x-8 p-2 rounded-2xl bg-transparent backdrop-blur-sm">
               {[
                 { id: "stats", label: "Status Cards" },
                 { id: "weekly-activity", label: "Weekly Activity" },
@@ -81,7 +84,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
                 <a
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className="group relative px-2 py-2 text-sm font-medium text-gray-300 hover:text-white transition-all duration-300 cursor-pointer  focus:outline-none focus:ring-0"
+                  className="group relative px-2 py-2 text-sm text-gray-100 hover:text-blue-400 transition-all duration-300 cursor-pointer  focus:outline-none focus:ring-0 font-poppins"
                 >
                   <span className="hidden sm:inline">{item.label}</span>
                 </a>
@@ -94,7 +97,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
             {/* Dark mode toggle with clean styling */}
             <button
               onClick={onToggleDarkMode}
-              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              className="group relative p-3 text-gray-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             >
               {darkMode ? (
@@ -111,7 +114,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
             {/* Refresh button with icon only */}
             <button
               onClick={onRefresh}
-              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              className="group relative p-3 text-gray-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
               aria-label="Refresh data"
             >
               <svg
@@ -131,7 +134,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
 
             {/* Notification bell icon */}
             <button
-              className="group relative p-3 text-blue-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
+              className="group relative p-3 text-gray-400 hover:text-blue-300 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-0"
               aria-label="Notifications"
             >
               <svg
@@ -158,7 +161,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
                 aria-label="Profile menu"
               >
                 <img
-                  src="https://avatars.githubusercontent.com/u/1?v=4"
+                  src={avatarUrl}
                   alt="Profile"
                   className="w-10 h-10 object-cover transition-transform duration-300 group-hover:scale-110"
                 />

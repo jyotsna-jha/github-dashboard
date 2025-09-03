@@ -7,7 +7,7 @@ export default function QuickStats({ data }) {
   ];
 
   return (
-    <div className="flex flex-wrap justify-end gap-4 mb-8">
+    <div className="flex flex-wrap justify-end gap-4 mb-20">
       {stats.map((stat, index) => (
         <div 
           key={stat.label}
