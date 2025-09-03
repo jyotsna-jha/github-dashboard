@@ -199,7 +199,7 @@ export default function StatCard({
 
   return (
     <motion.div 
-      className={`group cursor-pointer p-6 border rounded-xl bg-gray-900/50 backdrop-blur-sm transition-all duration-300 ${
+      className={`group cursor-pointer p-6 border rounded-xl bg-gray-900/50 backdrop-blur-sm transition-all duration-300 mb-24 ${
         isActive 
           ? 'border-[#2e86de] shadow-lg shadow-[#2e86de]/20' 
           : 'hover:border-gray-600'
