@@ -1,5 +1,6 @@
 // src/components/Header.jsx
 import React from "react";
+import ShareButton from "./ShareButton";
 
 export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggleDarkMode, userData }) {
   // Get current hour in 24-hour format
@@ -32,16 +33,16 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
   const avatarUrl = userData?.avatar_url || "https://avatars.githubusercontent.com/u/1?v=4";
 
   return (
-    <header className="w-full min-w-full relative bg-transparent mt-0 mb-4">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-gray-900/90 backdrop-blur-sm mb-0">
       {/* Subtle animated background elements */}
       <div className="absolute inset-0 opacity-5 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-500 rounded-full blur-2xl animate-pulse"></div>
         <div className="absolute top-0 right-1/4 w-24 h-24 bg-cyan-400 rounded-full blur-2xl animate-pulse delay-1000"></div>
       </div>
       
-      <div className="relative z-10 w-full px-4 sm:px-6"> {/* Reduced padding from py-8 to py-4 */}
+      <div className="relative z-10 w-full px-4 sm:px-6 py-4">
         {/* Main header content */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-30 w-full">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 w-full">
           
           {/* Left section - Title and mood */}
           <div className="flex items-center justify-between lg:justify-start flex-shrink-0">
@@ -77,14 +78,14 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
             <div className="flex items-center space-x-8 p-2 rounded-2xl bg-transparent backdrop-blur-sm">
               {[
                 { id: "stats", label: "Status Cards" },
+                { id: "goal-tracker", label: "Weekly Goals" },
                 { id: "weekly-activity", label: "Weekly Activity" },
                 { id: "recent-activity", label: "Recent Activity" },
-                { id: "goal-tracker", label: "Weekly Goals" }
               ].map((item) => (
                 <a
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className="group relative px-2 py-2 text-sm text-gray-100 hover:text-blue-400 transition-all duration-300 cursor-pointer  focus:outline-none focus:ring-0 font-poppins"
+                  className="group relative px-2 py-2 text-sm text-gray-100 hover:text-blue-400 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-0 font-poppins"
                 >
                   <span className="hidden sm:inline">{item.label}</span>
                 </a>
@@ -103,7 +104,7 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
               {darkMode ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+                </svg>
               ) : (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -171,8 +172,6 @@ export default function Header({ todayCommits = 0, onRefresh, darkMode, onToggle
             </div>
           </div>
         </div>
-
-      
       </div>
     </header>
   );

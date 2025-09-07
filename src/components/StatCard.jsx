@@ -47,12 +47,7 @@ export default function StatCard({
 
   // Beautiful animation variants
   const containerVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 60,
-      scale: 0.9,
-      rotateX: -15
-    },
+    hidden: { opacity: 0, y: 60, scale: 0.9, rotateX: -15 },
     visible: { 
       opacity: 1, 
       y: 0,
@@ -68,144 +63,72 @@ export default function StatCard({
       y: -8,
       scale: 1.02,
       rotateY: 2,
-      transition: {
-        duration: 0.3,
-        ease: "easeOut"
-      }
+      transition: { duration: 0.3, ease: "easeOut" }
     },
-    tap: {
-      scale: 0.98,
-      y: -2
-    }
+    tap: { scale: 0.98, y: -2 }
   };
 
   const childVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20,
-      x: -10
-    },
+    hidden: { opacity: 0, y: 20, x: -10 },
     visible: { 
       opacity: 1, 
       y: 0,
       x: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut"
-      }
+      transition: { duration: 0.6, ease: "easeOut" }
     }
   };
 
   const valueVariants = {
-    hidden: { 
-      scale: 0.5, 
-      opacity: 0,
-      rotateY: -90
-    },
+    hidden: { scale: 0.5, opacity: 0, rotateY: -90 },
     visible: { 
       scale: 1, 
       opacity: 1,
       rotateY: 0,
-      transition: {
-        duration: 0.8,
-        delay: 0.3,
-        ease: "backOut"
-      }
+      transition: { duration: 0.8, delay: 0.3, ease: "backOut" }
     },
-    hover: {
-      scale: 1.1,
-      rotateY: 5,
-      transition: {
-        duration: 0.3
-      }
-    }
+    hover: { scale: 1.1, rotateY: 5, transition: { duration: 0.3 } }
   };
 
   const iconVariants = {
-    hidden: { 
-      scale: 0, 
-      rotate: -180,
-      opacity: 0
-    },
+    hidden: { scale: 0, rotate: -180, opacity: 0 },
     visible: { 
       scale: 1, 
       rotate: 0,
       opacity: 1,
-      transition: {
-        duration: 0.6,
-        delay: 0.2,
-        ease: "backOut"
-      }
+      transition: { duration: 0.6, delay: 0.2, ease: "backOut" }
     },
-    hover: {
-      rotate: 360,
-      scale: 1.2,
-      transition: {
-        duration: 0.8,
-        ease: "easeInOut"
-      }
-    }
+    hover: { rotate: 360, scale: 1.2, transition: { duration: 0.8, ease: "easeInOut" } }
   };
 
   const progressVariants = {
-    hidden: { 
-      scale: 0,
-      opacity: 0,
-      rotate: -90
-    },
+    hidden: { scale: 0, opacity: 0, rotate: -90 },
     visible: { 
       scale: 1,
       opacity: 1,
       rotate: 0,
-      transition: {
-        duration: 0.8,
-        delay: 0.5,
-        ease: "backOut"
-      }
+      transition: { duration: 0.8, delay: 0.5, ease: "backOut" }
     },
-    hover: {
-      rotate: 10,
-      scale: 1.05,
-      transition: {
-        duration: 0.4
-      }
-    }
+    hover: { rotate: 10, scale: 1.05, transition: { duration: 0.4 } }
   };
 
   const trendVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20,
-      scale: 0.8
-    },
+    hidden: { opacity: 0, y: 20, scale: 0.8 },
     visible: { 
       opacity: 1, 
       y: 0,
       scale: 1,
-      transition: {
-        duration: 0.5,
-        delay: 0.8,
-        ease: "easeOut"
-      }
+      transition: { duration: 0.5, delay: 0.8, ease: "easeOut" }
     },
-    hover: {
-      scale: 1.1,
-      y: -2,
-      transition: {
-        duration: 0.2
-      }
-    }
+    hover: { scale: 1.1, y: -2, transition: { duration: 0.2 } }
   };
 
   return (
     <motion.div 
-      className={`group cursor-pointer p-6 border rounded-xl bg-gray-900/50 backdrop-blur-sm transition-all duration-300 mb-24 ${
+      className={`group p-6 rounded-xl bg-gray-900/50 backdrop-blur-sm transition-all duration-300 mb-24 shadow-lg ${
         isActive 
-          ? 'border-[#2e86de] shadow-lg shadow-[#2e86de]/20' 
-          : 'hover:border-gray-600'
-      } ${
-        isClickable ? 'cursor-pointer hover:shadow-md' : 'cursor-default'
-      }`}
+          ? 'shadow-[#2e86de]/40' 
+          : 'hover:shadow-xl hover:shadow-[#2e86de]/20'
+      } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -214,16 +137,11 @@ export default function StatCard({
       {...containerProps}
     >
       {/* Header */}
-      <motion.div 
-        className="flex items-center justify-between mb-4"
-        variants={childVariants}
-      >
+      <motion.div className="flex items-center justify-between mb-4" variants={childVariants}>
         <div className="flex items-center space-x-3">
           <motion.div 
             className={`text-xl transition-colors duration-300 ${
-              isActive 
-                ? 'text-[#2e86de]' 
-                : 'text-gray-400 group-hover:text-[#2e86de]'
+              isActive ? 'text-[#2e86de]' : 'text-gray-400 group-hover:text-[#2e86de]'
             }`}
             variants={iconVariants}
             whileHover="hover"
@@ -233,14 +151,9 @@ export default function StatCard({
           <motion.div variants={childVariants}>
             <motion.h3 
               className={`font-semibold transition-colors duration-300 ${
-                isActive 
-                  ? 'text-[#2e86de]' 
-                  : 'text-white group-hover:text-[#2e86de]'
+                isActive ? 'text-[#2e86de]' : 'text-white group-hover:text-[#2e86de]'
               }`}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 }
-              }}
+              whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
             >
               {title}
             </motion.h3>
@@ -259,16 +172,11 @@ export default function StatCard({
       </motion.div>
 
       {/* Main Content */}
-      <motion.div 
-        className="flex items-center justify-between"
-        variants={childVariants}
-      >
+      <motion.div className="flex items-center justify-between" variants={childVariants}>
         {/* Value */}
         <motion.div 
           className={`text-4xl font-bold transition-colors duration-300 ${
-            isActive 
-              ? 'text-[#2e86de]' 
-              : 'text-white group-hover:text-[#2e86de]'
+            isActive ? 'text-[#2e86de]' : 'text-white group-hover:text-[#2e86de]'
           }`}
           variants={valueVariants}
           whileHover="hover"
@@ -278,11 +186,7 @@ export default function StatCard({
 
         {/* Optional Circular Progress */}
         {progressPercentage !== null && (
-          <motion.div 
-            className="relative w-20 h-20"
-            variants={progressVariants}
-            whileHover="hover"
-          >
+          <motion.div className="relative w-20 h-20" variants={progressVariants} whileHover="hover">
             <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
               <motion.circle
                 cx="50"
@@ -308,11 +212,7 @@ export default function StatCard({
                 style={{ strokeDasharray: circumference }}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset }}
-                transition={{ 
-                  duration: 2, 
-                  delay: 0.8, 
-                  ease: [0.25, 0.46, 0.45, 0.94]
-                }}
+                transition={{ duration: 2, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -322,15 +222,8 @@ export default function StatCard({
                 }`}
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: 1.5,
-                  ease: "backOut"
-                }}
-                whileHover={{
-                  scale: 1.2,
-                  transition: { duration: 0.2 }
-                }}
+                transition={{ duration: 0.5, delay: 1.5, ease: "backOut" }}
+                whileHover={{ scale: 1.2, transition: { duration: 0.2 } }}
               >
                 {Math.round(progressPercentage)}%
               </motion.span>
@@ -341,18 +234,11 @@ export default function StatCard({
 
       {/* Trend Section */}
       {typeof trend === 'number' && (
-        <motion.div 
-          className="mt-4 pt-4 border-t border-gray-700"
-          variants={trendVariants}
-          whileHover="hover"
-        >
+        <motion.div className="mt-4 pt-4 border-t border-gray-700" variants={trendVariants} whileHover="hover">
           <div className="flex items-center justify-between">
             <motion.span 
               className="text-sm text-gray-400"
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 }
-              }}
+              whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
             >
               Trend
             </motion.span>
@@ -366,11 +252,7 @@ export default function StatCard({
                       ? 'text-red-400' 
                       : 'text-gray-400'
               } group-hover:text-[#2e86de]`}
-              whileHover={{
-                scale: 1.1,
-                x: 5,
-                transition: { duration: 0.2 }
-              }}
+              whileHover={{ scale: 1.1, x: 5, transition: { duration: 0.2 } }}
             >
               {trendPositive && (
                 <motion.svg 
@@ -381,11 +263,7 @@ export default function StatCard({
                   initial={{ rotate: -90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   transition={{ duration: 0.5, delay: 1 }}
-                  whileHover={{
-                    rotate: 10,
-                    scale: 1.2,
-                    transition: { duration: 0.2 }
-                  }}
+                  whileHover={{ rotate: 10, scale: 1.2, transition: { duration: 0.2 } }}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </motion.svg>
@@ -399,11 +277,7 @@ export default function StatCard({
                   initial={{ rotate: 90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   transition={{ duration: 0.5, delay: 1 }}
-                  whileHover={{
-                    rotate: -10,
-                    scale: 1.2,
-                    transition: { duration: 0.2 }
-                  }}
+                  whileHover={{ rotate: -10, scale: 1.2, transition: { duration: 0.2 } }}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 7l-9.2 9.2M7 7v10h10" />
                 </motion.svg>
