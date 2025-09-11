@@ -22,457 +22,401 @@ import RecentActivity from "./components/RecentActivity";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ContributionHeatmap from "./components/ContributionHeatmap";
 import QuickStats from "./components/QuickStats";
+import LoginButton from "./components/LoginButton";
 
 export default function App() {
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.user);
-  
-  // Use theme from context instead of local state
-  const { darkMode } = useContext(ThemeContext);
+  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 
-  // New state for interactivity
   const [activeStatCard, setActiveStatCard] = useState(null);
   const [showAllActivity, setShowAllActivity] = useState(false);
-
-  // Add state to store raw events for debugging
   const [rawEvents, setRawEvents] = useState([]);
-  // Add state to store user data separately
   const [userData, setUserData] = useState(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
-  const loadData = async () => {
-    dispatch(setLoading());
+  // ✅ Parse URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const isCallback = window.location.pathname === "/callback";
 
+  // ✅ Auth state - Check token on every render
+  const [token, setToken] = useState(() => localStorage.getItem("github_token"));
+  const isLoggedIn = !!token;
+
+  // Listen for localStorage changes (for logout)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newToken = localStorage.getItem("github_token");
+      setToken(newToken);
+      
+      // If token was removed (logout), clear all data
+      if (!newToken) {
+        setUserData(null);
+        setRawEvents([]);
+        setHasInitialLoad(false);
+        dispatch(setData(null));
+        dispatch(setError(null));
+        dispatch(setLoading(false));
+      }
+    };
+
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically in case of programmatic changes
+    const intervalId = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(intervalId);
+    };
+  }, [dispatch]);
+
+  // Replace your exchangeCodeForToken function with this:
+  const exchangeCodeForToken = async () => {
+    if (isLoadingData) return;
+    
+    setIsLoadingData(true);
+    dispatch(setLoading(true));
+    
     try {
-      console.log("🔄 Loading GitHub data at:", new Date().toLocaleString());
+      console.log("📨 Requesting token from backend...");
+      
+      // Dynamic API URL - works for both local dev and production
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal 
+        ? `http://localhost:3001/api/callback?code=${code}`  // Local Express server
+        : `/api/callback?code=${code}`;                       // Vercel serverless function
 
-      // Use your existing API with enhanced data fetching
-      const githubData = await fetchAllGitHubData();
-      const { events, user, repos } = githubData;
+      console.log("🌐 Using API URL:", apiUrl);
+      
+      const response = await fetch(apiUrl);
 
-      // Store raw events for debugging
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
+
+      const { token: accessToken } = await response.json();
+
+      if (accessToken) {
+        localStorage.setItem("github_token", accessToken);
+        setToken(accessToken); // Update local state
+        window.history.replaceState({}, "", "/");
+        console.log("✅ Token received, loading user data...");
+        await loadData(accessToken);
+      } else {
+        dispatch(setError("No access token received"));
+      }
+    } catch (err) {
+      console.error("🔐 Token exchange failed:", err);
+      dispatch(setError("Login failed: " + err.message));
+    } finally {
+      setIsLoadingData(false);
+      dispatch(setLoading(false));
+    }
+  };
+
+  // ✅ Load user data using token
+  const loadData = async (tokenToUse) => {
+    if (isLoadingData) {
+      console.log("⚠️ Already loading data, skipping...");
+      return;
+    }
+
+    console.log("🚀 Starting loadData...");
+    setIsLoadingData(true);
+    dispatch(setLoading(true));
+    
+    try {
+      console.log("📡 Fetching GitHub data with token...");
+      const fetchedData = await fetchAllGitHubData(tokenToUse);
+      const { events, user, repos } = fetchedData;
+
+      console.log("📦 Raw data received:", { 
+        eventsCount: events?.length, 
+        userLogin: user?.login,
+        reposCount: repos?.length 
+      });
+
+      setUserData(user);
       setRawEvents(events || []);
-      // Store user data for Header
-      setUserData(user || null);
 
-      // Enhanced logging
-      console.log("📡 Raw Events Count:", events?.length);
-      console.log("📡 First 5 Events:", events?.slice(0, 5));
-      console.log("👤 User Data:", user);
-      console.log("📁 Repos Count:", repos?.length);
-
-      // Check today's date
       const today = new Date().toDateString();
-      console.log("📅 Today's date:", today);
+      const todayEvents = events.filter((event) => {
+        const eventDate = new Date(event.created_at);
+        return eventDate.toDateString() === today;
+      });
 
-      // Filter events from today
-      const todayEvents =
-        events?.filter((event) => {
-          const eventDate = new Date(event.created_at);
-          return eventDate.toDateString() === today;
-        }) || [];
+      const todayPushEvents = todayEvents.filter((event) => event.type === "PushEvent");
+      const todayCommits = todayPushEvents.reduce((sum, e) => sum + (e.payload?.size || 1), 0);
 
-      console.log(`📅 Today's Events (${today}):`, todayEvents);
-
-      // Filter only PushEvents from today (actual commits)
-      const todayPushEvents = todayEvents.filter(
-        (event) => event.type === "PushEvent"
-      );
-
-      // Sum up the number of commits using payload.size
-      const todayCommits = todayPushEvents.reduce(
-        (sum, event) => sum + (event.payload?.size || 1),
-        0
-      );
-
-      console.log("📦 Today's commits count:", todayCommits);
-
-      // Calculate all the dynamic statistics
       const activityStats = calculateActivityStats(events);
       const repoStats = calculateRepoStats(repos);
       const contributionData = getContributionData(events);
 
-      console.log("📈 Activity Stats:", activityStats);
-      console.log("🏆 Repo Stats:", repoStats);
-
-      // Final formatted data
       const formattedData = {
-        // Your existing formatted data
         weekly: formatWeeklyCommits(events),
         streak: getCurrentStreak(events),
         recent: getRecentActivity(events),
-
-        // Real dynamic user data from GitHub API
-        followers: user?.followers || 0,
-        following: user?.following || 0,
-        totalRepos: user?.public_repos || repoStats.totalRepos,
+        followers: user.followers || 0,
+        following: user.following || 0,
+        totalRepos: user.public_repos || repoStats.totalRepos,
         totalStars: repoStats.totalStars,
         totalForks: repoStats.totalForks,
         languagesUsed: repoStats.languagesUsed,
-
-        // Real dynamic activity data
         totalCommits: activityStats.totalCommitsThisWeek,
         totalCommitsMonth: activityStats.totalCommitsThisMonth,
         uniqueReposThisWeek: activityStats.uniqueReposThisWeek,
         totalEventsThisWeek: activityStats.totalEventsThisWeek,
-
-        // Real profile data
-        username: user?.login || "jyotsna-jha",
-        name: user?.name || "Jyotsna Jha",
-        avatarUrl: user?.avatar_url || "",
-        bio: user?.bio || "",
-        location: user?.location || "",
-        company: user?.company || "",
-        blogUrl: user?.blog || "",
-        twitterUsername: user?.twitter_username || "",
-
-        // Additional calculated metrics
+        username: user.login || "User",
+        name: user.name || "GitHub User",
+        avatarUrl: user.avatar_url || "",
+        bio: user.bio || "",
+        location: user.location || "",
+        company: user.company || "",
+        blogUrl: user.blog || "",
+        twitterUsername: user.twitter_username || "",
         avgCommitsPerDay: activityStats.avgCommitsPerDay,
         mostActiveRepo: activityStats.mostActiveRepo,
         contributionData: contributionData,
-
-        // Repository insights
         forkedRepos: repoStats.forkedRepos,
         originalRepos: repoStats.originalRepos,
         privateRepos: repoStats.privateRepos,
-
-        // Account creation and activity
-        joinedDate: user?.created_at
-          ? new Date(user.created_at).getFullYear()
-          : null,
-        lastUpdate: user?.updated_at || null,
-
-        // Debug info
-        totalRawEvents: events?.length || 0,
+        joinedDate: user.created_at ? new Date(user.created_at).getFullYear() : null,
+        lastUpdate: user.updated_at || null,
+        totalRawEvents: events.length,
         todayEventsCount: todayEvents.length,
         todayCommits,
-        lastEventDate: events?.[0]?.created_at || null,
+        lastEventDate: events[0]?.created_at || null,
       };
 
-      console.log("✅ Final Formatted Data:", formattedData);
+      console.log("🎯 About to dispatch formatted data:", {
+        username: formattedData.username,
+        totalCommits: formattedData.totalCommits,
+        streak: formattedData.streak,
+      });
+      
       dispatch(setData(formattedData));
+      setHasInitialLoad(true);
+      console.log("✅ Data dispatched successfully!");
     } catch (err) {
-      console.error("❌ Error in loadData:", err);
+      console.error("❌ Failed to load data:", err);
       dispatch(setError(err.message));
+    } finally {
+      setIsLoadingData(false);
+      dispatch(setLoading(false));
     }
   };
 
+  // ✅ Initial load effect - FIXED dependencies
   useEffect(() => {
-    loadData();
+    if (isCallback && code && !isLoadingData) {
+      console.log("🔄 Handling OAuth callback...");
+      exchangeCodeForToken();
+    } else if (isLoggedIn && !hasInitialLoad && !isLoadingData && token) {
+      console.log("🔓 Logged in, loading data...");
+      loadData(token);
+    }
+  }, [code, isCallback, isLoggedIn, token, hasInitialLoad, isLoadingData]);
 
-    // Set up interval for real-time updates (every 5 minutes)
-    const intervalId = setInterval(loadData, 5 * 60 * 1000);
+  // ✅ Separate effect for auto-refresh to prevent infinite loops
+  useEffect(() => {
+    if (isLoggedIn && hasInitialLoad && !isCallback && token) {
+      console.log("⏰ Setting up auto-refresh...");
+      const intervalId = setInterval(() => {
+        if (!isLoadingData) {
+          console.log("🔄 Auto-refreshing data...");
+          loadData(token);
+        }
+      }, 5 * 60 * 1000); // Auto-refresh every 5 minutes
 
-    return () => clearInterval(intervalId);
-  }, [dispatch]);
+      return () => {
+        console.log("🛑 Clearing auto-refresh interval");
+        clearInterval(intervalId);
+      };
+    }
+  }, [isLoggedIn, hasInitialLoad, isCallback, token, isLoadingData]);
 
-  const handleRefresh = () => {
-    console.log("🔄 Manual refresh triggered");
-    loadData();
-  };
-
-  if (loading) return <LoadingSpinner />;
-
-  if (error) {
+  // ✅ Show loading during login
+  if (isCallback && code) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="text-6xl mb-4">😞</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Oops! Something went wrong
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Logging you in...</p>
+      </div>
+    );
+  }
+
+  // ✅ Show Login Screen if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 px-4">
+        <div className="text-center max-w-lg">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            🚀 DevFlow Analytics
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Track your GitHub activity, coding streaks, and productivity.
+          </p>
+          <LoginButton />
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
+            We only access public data. Never store your token.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🐛 Debug logs
+  console.log("🔍 Redux state:", { data, loading, error });
+  console.log("🔍 Render conditions:", { 
+    isLoggedIn, 
+    loading: loading || isLoadingData, 
+    error, 
+    hasData: !!data 
+  });
+
+  // ✅ Show Dashboard if logged in
+  if (loading || isLoadingData) {
+    console.log("🔄 Showing loading spinner");
+    return <LoadingSpinner />;
+  }
+  
+  if (error) {
+    console.log("❌ Showing error:", error);
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 p-6 bg-red-100 dark:bg-red-900 rounded-lg">
+          <strong>Error:</strong> {error}
+          <button 
+            onClick={() => {
+              dispatch(setError(null));
+              if (token) loadData(token);
+            }}
+            className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            Try Again
+            Retry
           </button>
         </div>
       </div>
     );
   }
 
+  // ✅ Check if we have data
+  if (!data) {
+    console.log("⚠️ No data available, showing loading...");
+    return <LoadingSpinner />;
+  }
+
+  console.log("🎨 Rendering dashboard with data:", data);
+
   return (
     <div className="min-h-screen transition-colors duration-300 bg-gray-100 dark:bg-gray-900">
-      {/* Add padding-top to account for fixed header */}
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 pt-32">
-        {/* Enhanced Header with controls */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <Header 
               todayCommits={data?.todayCommits || 0} 
-              onRefresh={handleRefresh}
+              onRefresh={() => {
+                if (!isLoadingData && token) {
+                  loadData(token);
+                }
+              }}
+              darkMode={darkMode}
+              onToggleDarkMode={toggleDarkMode}
               userData={userData}
             />
           </div>
         </div>
 
-        {/* Quick Stats with Real Data */}
-        <QuickStats data={data} />
+        {/* Quick Stats */}
+        <div className="-mt-9">
+          <QuickStats data={data} />
+        </div>
 
-        {/* Enhanced Stats Cards with flowing layout */}
+        {/* Stats Cards */}
         <div className="relative mb-24" id="stats">
-          {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/5 via-transparent to-blue-900/5 rounded-3xl blur-3xl"></div>
-
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
             <StatCard
               title="Weekly Commits"
               value={data?.totalCommits || 0}
-              subtitle={
-                data?.totalCommits > 10
-                  ? "🚀 Great progress!"
-                  : "💪 Keep coding!"
-              }
+              subtitle={data?.totalCommits > 10 ? "🚀 Great progress!" : "💪 Keep coding!"}
               icon="📦"
-              trend={
-                data?.totalCommits > 0
-                  ? Math.round(
-                      (data.totalCommits / data.totalCommitsMonth) * 100
-                    )
-                  : 0
-              }
-              onClick={() =>
-                setActiveStatCard(
-                  activeStatCard === "commits" ? null : "commits"
-                )
-              }
+              onClick={() => setActiveStatCard(activeStatCard === "commits" ? null : "commits")}
               isActive={activeStatCard === "commits"}
             />
             <StatCard
               title="Current Streak"
               value={`${data?.streak || 0} days`}
-              subtitle={
-                data?.streak >= 7
-                  ? "🔥 On fire!"
-                  : data?.streak > 0
-                  ? "💪 Keep going!"
-                  : "🌱 Start today!"
-              }
+              subtitle={data?.streak >= 7 ? "🔥 On fire!" : data?.streak > 0 ? "💪 Keep going!" : "🌱 Start today!"}
               icon="🔥"
-              trend={data?.streak >= 7 ? 25 : data?.streak > 0 ? 8 : 0}
-              onClick={() =>
-                setActiveStatCard(
-                  activeStatCard === "streak" ? null : "streak"
-                )
-              }
+              onClick={() => setActiveStatCard(activeStatCard === "streak" ? null : "streak")}
               isActive={activeStatCard === "streak"}
             />
             <StatCard
               title="Recent Activity"
               value={data?.totalEventsThisWeek || 0}
-              subtitle={
-                data?.totalEventsThisWeek > 15
-                  ? "📈 Very active"
-                  : data?.totalEventsThisWeek > 5
-                  ? "📊 Active"
-                  : "🌙 Quiet week"
-              }
+              subtitle={data?.totalEventsThisWeek > 15 ? "📈 Very active" : data?.totalEventsThisWeek > 5 ? "📊 Active" : "🌙 Quiet week"}
               icon="💬"
-              trend={
-                data?.totalEventsThisWeek > 0
-                  ? Math.round((data.totalEventsThisWeek / 20) * 100)
-                  : 0
-              }
-              onClick={() =>
-                setActiveStatCard(
-                  activeStatCard === "activity" ? null : "activity"
-                )
-              }
+              onClick={() => setActiveStatCard(activeStatCard === "activity" ? null : "activity")}
               isActive={activeStatCard === "activity"}
             />
           </div>
         </div>
-        
+
         <div id="goal-tracker">
           <GoalTracker />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Chart Section */}
           <div className="lg:col-span-2" id="weekly-activity">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8 transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  Weekly Activity
-                </h2>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <span>Last 7 days</span>
-                  </div>
-                  {data?.totalCommits > 0 && (
-                    <div className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full">
-                      {data.totalCommits} total commits
-                    </div>
-                  )}
-                </div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Weekly Activity</h2>
               </div>
               <ActivityChart data={data?.weekly} />
             </div>
-
-            {/* Contribution Heatmap with Real Data */}
             <ContributionHeatmap contributionData={data?.contributionData} />
           </div>
 
-          {/* Activity Feed */}
           <div className="lg:col-span-1" id="recent-activity">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8 transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Recent Activity
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
                 {data?.recent && data.recent.length > 5 && (
                   <button
                     onClick={() => setShowAllActivity(!showAllActivity)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 text-sm font-medium transition-colors duration-200"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 text-sm font-medium"
                   >
                     {showAllActivity ? "Show Less" : "Show All"}
                   </button>
                 )}
               </div>
-
               <RecentActivity
-                activities={
-                  showAllActivity ? data?.recent : data?.recent?.slice(0, 5)
-                }
+                activities={showAllActivity ? data?.recent : data?.recent?.slice(0, 5)}
                 showAll={showAllActivity}
                 onToggleShow={setShowAllActivity}
                 totalCount={data?.recent?.length}
               />
             </div>
-
-            {/* Additional Profile Info */}
-            {(data?.bio || data?.location || data?.company) && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mt-6 transition-colors duration-300">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Profile Info
-                </h3>
-                <div className="space-y-3">
-                  {data.bio && (
-                    <div className="flex items-start space-x-2">
-                      <span className="text-gray-500 dark:text-gray-400">💭</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {data.bio}
-                      </p>
-                    </div>
-                  )}
-                  {data.location && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-500 dark:text-gray-400">📍</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {data.location}
-                      </p>
-                    </div>
-                  )}
-                  {data.company && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-500 dark:text-gray-400">🏢</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {data.company}
-                      </p>
-                    </div>
-                  )}
-                  {data.joinedDate && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-500 dark:text-gray-400">📅</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Joined GitHub in {data.joinedDate}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Footer with real stats */}
         <div className="mt-12 text-center">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {data?.totalStars || 0}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Total Stars
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {data?.totalForks || 0}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Total Forks
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {data?.languagesUsed || 0}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Languages
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {data?.originalRepos || 0}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Original Repos
-              </p>
-            </div>
-          </div>
-
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Powered by GitHub API • Updated in real-time • Built with ❤️
+            Powered by GitHub API • Built with ❤️
           </p>
-          {data?.lastUpdate && (
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Last updated: {new Date(data.lastUpdate).toLocaleString()}
-            </p>
-          )}
         </div>
       </div>
 
-      {/* Floating Action Button - Share Button */}
       <ShareButton statsData={data} />
 
-      {/* Add scroll-margin-top to all sections for proper offset */}
       <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out forwards;
-          opacity: 0;
-        }
-
-        /* Add scroll offset for fixed header */
-        #stats,
-        #goal-tracker,
-        #weekly-activity,
-        #recent-activity {
+        #stats, #goal-tracker, #weekly-activity, #recent-activity {
           scroll-margin-top: 120px;
         }
       `}</style>

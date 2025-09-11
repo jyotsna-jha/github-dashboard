@@ -1,92 +1,80 @@
-const USERNAME = "jyotsna-jha";
-const TOKEN = import.meta.env.VITE_GITHUB_TOKEN; // 👈 for Vite
+// GitHub API functions
+const GITHUB_API_BASE = 'https://api.github.com';
 
-const headers = {
-  'Authorization': `token ${TOKEN}`,
-  'Accept': 'application/vnd.github.v3+json'
+// Helper function to make authenticated requests
+const githubFetch = async (endpoint, token) => {
+  const response = await fetch(`${GITHUB_API_BASE}${endpoint}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('github_token');
+      throw new Error('Authentication failed. Please login again.');
+    }
+    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
-// Add cache busting to prevent stale data
-const getCacheBustingUrl = (url) => {
-  const timestamp = new Date().getTime();
-  return `${url}${url.includes('?') ? '&' : '?'}_=${timestamp}`;
+// Get user profile
+export const fetchUserProfile = async (token) => {
+  try {
+    return await githubFetch('/user', token);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
 };
 
-export async function fetchGitHubActivity() {
+// Get user repositories
+export const fetchUserRepos = async (token, page = 1, perPage = 100) => {
   try {
-    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}/events`), {
-      headers
-    });
-
-    if (!res.ok) {
-      throw new Error(`GitHub API error: ${res.status}`);
-    }
-
-    const data = await res.json();
-    console.log("Raw GitHub Events:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch GitHub data:", err);
-    throw err;
+    return await githubFetch(`/user/repos?sort=updated&per_page=${perPage}&page=${page}`, token);
+  } catch (error) {
+    console.error('Error fetching repositories:', error);
+    throw error;
   }
-}
+};
 
-// New function to fetch user profile data
-export async function fetchGitHubUserData() {
+// Get user events (activity)
+export const fetchUserEvents = async (token, username, page = 1, perPage = 100) => {
   try {
-    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}`), {
-      headers
-    });
-
-    if (!res.ok) {
-      throw new Error(`GitHub API error: ${res.status}`);
-    }
-
-    const data = await res.json();
-    console.log("GitHub User Data:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch GitHub user data:", err);
-    throw err;
+    return await githubFetch(`/users/${username}/events?per_page=${perPage}&page=${page}`, token);
+  } catch (error) {
+    console.error('Error fetching user events:', error);
+    throw error;
   }
-}
+};
 
-// New function to fetch user repositories
-export async function fetchGitHubRepos() {
+// Main function to fetch all GitHub data
+export const fetchAllGitHubData = async (token) => {
   try {
-    const res = await fetch(getCacheBustingUrl(`https://api.github.com/users/${USERNAME}/repos?per_page=100&sort=updated`), {
-      headers
-    });
+    console.log('🔄 Starting to fetch GitHub data...');
+    
+    // Get user profile first
+    const user = await fetchUserProfile(token);
+    console.log('✅ User profile fetched');
 
-    if (!res.ok) {
-      throw new Error(`GitHub API error: ${res.status}`);
-    }
+    // Get repositories
+    const repos = await fetchUserRepos(token);
+    console.log('✅ Repositories fetched:', repos.length);
 
-    const data = await res.json();
-    console.log("GitHub Repos Data:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch GitHub repos data:", err);
-    throw err;
-  }
-}
-
-// Combined function to fetch all GitHub data at once
-export async function fetchAllGitHubData() {
-  try {
-    const [events, userData, repos] = await Promise.all([
-      fetchGitHubActivity(),
-      fetchGitHubUserData(),
-      fetchGitHubRepos()
-    ]);
+    // Get user events (activity)
+    const events = await fetchUserEvents(token, user.login);
+    console.log('✅ Events fetched:', events.length);
 
     return {
+      user,
+      repos,
       events,
-      user: userData,
-      repos
     };
-  } catch (err) {
-    console.error("Failed to fetch complete GitHub data:", err);
-    throw err;
+  } catch (error) {
+    console.error('❌ Error in fetchAllGitHubData:', error);
+    throw error;
   }
-}
+};
