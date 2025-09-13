@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading, setData, setError } from "./store/userSlice";
 import { fetchAllGitHubData } from "./api/githubApi";
 import ShareButton from "./components/ShareButton";
 import GoalTracker from "./components/GoalTracker";
 import { ThemeContext } from "./context/ThemeContext";
+
 import {
   formatWeeklyCommits,
   getCurrentStreak,
@@ -23,6 +24,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import ContributionHeatmap from "./components/ContributionHeatmap";
 import QuickStats from "./components/QuickStats";
 import LoginButton from "./components/LoginButton";
+import LiquidEther from "./components/LiquidEther";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -42,7 +44,9 @@ export default function App() {
   const isCallback = window.location.pathname === "/callback";
 
   // ✅ Auth state - Check token on every render
-  const [token, setToken] = useState(() => localStorage.getItem("github_token"));
+  const [token, setToken] = useState(() =>
+    localStorage.getItem("github_token")
+  );
   const isLoggedIn = !!token;
 
   // Listen for localStorage changes (for logout)
@@ -50,7 +54,7 @@ export default function App() {
     const handleStorageChange = () => {
       const newToken = localStorage.getItem("github_token");
       setToken(newToken);
-      
+
       // If token was removed (logout), clear all data
       if (!newToken) {
         setUserData(null);
@@ -63,13 +67,13 @@ export default function App() {
     };
 
     // Listen for storage events from other tabs
-    window.addEventListener('storage', handleStorageChange);
-    
+    window.addEventListener("storage", handleStorageChange);
+
     // Also check periodically in case of programmatic changes
     const intervalId = setInterval(handleStorageChange, 1000);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
       clearInterval(intervalId);
     };
   }, [dispatch]);
@@ -77,21 +81,23 @@ export default function App() {
   // Replace your exchangeCodeForToken function with this:
   const exchangeCodeForToken = async () => {
     if (isLoadingData) return;
-    
+
     setIsLoadingData(true);
     dispatch(setLoading(true));
-    
+
     try {
       console.log("📨 Requesting token from backend...");
-      
+
       // Dynamic API URL - works for both local dev and production
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal 
-        ? `http://localhost:3001/api/callback?code=${code}`  // Local Express server
-        : `/api/callback?code=${code}`;                       // Vercel serverless function
+      const isLocal =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      const apiUrl = isLocal
+        ? `http://localhost:3001/api/callback?code=${code}` // Local Express server
+        : `/api/callback?code=${code}`; // Vercel serverless function
 
       console.log("🌐 Using API URL:", apiUrl);
-      
+
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
@@ -129,16 +135,16 @@ export default function App() {
     console.log("🚀 Starting loadData...");
     setIsLoadingData(true);
     dispatch(setLoading(true));
-    
+
     try {
       console.log("📡 Fetching GitHub data with token...");
       const fetchedData = await fetchAllGitHubData(tokenToUse);
       const { events, user, repos } = fetchedData;
 
-      console.log("📦 Raw data received:", { 
-        eventsCount: events?.length, 
+      console.log("📦 Raw data received:", {
+        eventsCount: events?.length,
         userLogin: user?.login,
-        reposCount: repos?.length 
+        reposCount: repos?.length,
       });
 
       setUserData(user);
@@ -150,8 +156,13 @@ export default function App() {
         return eventDate.toDateString() === today;
       });
 
-      const todayPushEvents = todayEvents.filter((event) => event.type === "PushEvent");
-      const todayCommits = todayPushEvents.reduce((sum, e) => sum + (e.payload?.size || 1), 0);
+      const todayPushEvents = todayEvents.filter(
+        (event) => event.type === "PushEvent"
+      );
+      const todayCommits = todayPushEvents.reduce(
+        (sum, e) => sum + (e.payload?.size || 1),
+        0
+      );
 
       const activityStats = calculateActivityStats(events);
       const repoStats = calculateRepoStats(repos);
@@ -185,7 +196,9 @@ export default function App() {
         forkedRepos: repoStats.forkedRepos,
         originalRepos: repoStats.originalRepos,
         privateRepos: repoStats.privateRepos,
-        joinedDate: user.created_at ? new Date(user.created_at).getFullYear() : null,
+        joinedDate: user.created_at
+          ? new Date(user.created_at).getFullYear()
+          : null,
         lastUpdate: user.updated_at || null,
         totalRawEvents: events.length,
         todayEventsCount: todayEvents.length,
@@ -198,7 +211,7 @@ export default function App() {
         totalCommits: formattedData.totalCommits,
         streak: formattedData.streak,
       });
-      
+
       dispatch(setData(formattedData));
       setHasInitialLoad(true);
       console.log("✅ Data dispatched successfully!");
@@ -241,30 +254,100 @@ export default function App() {
   }, [isLoggedIn, hasInitialLoad, isCallback, token, isLoadingData]);
 
   // ✅ Show loading during login
-  if (isCallback && code) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Logging you in...</p>
-      </div>
-    );
-  }
+if (isCallback && code) {
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center relative overflow-hidden">
+      {/* Background gradient glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-indigo-600/10 to-transparent blur-3xl"></div>
 
-  // ✅ Show Login Screen if not logged in
+      <div className="relative z-10 text-center">
+        {/* Spinner wrapper */}
+        <div className="relative mb-10">
+          {/* Outer pulsing ring */}
+          <div className="w-24 h-24 border-4 border-purple-700/40 rounded-full animate-pulse"></div>
+
+          {/* Inner spinning ring */}
+          <div className="w-24 h-24 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+
+          {/* Center glowing dot */}
+          <div className="w-3 h-3 bg-purple-400 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping shadow-lg shadow-purple-500/40"></div>
+        </div>
+
+        {/* Text section */}
+        <div className="space-y-3">
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent animate-pulse font-poppins">
+            Logging you in...
+          </h3>
+          <p className="text-gray-400 text-sm font-light">
+            Please wait while we authenticate your account
+          </p>
+
+          {/* Progress dots */}
+          <div className="flex justify-center space-x-2 mt-4">
+            <div
+              className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0ms" }}
+            ></div>
+            <div
+              className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            ></div>
+            <div
+              className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+  // ✅ Show Login Screen with LiquidEther Background if not logged in
   if (!isLoggedIn) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 px-4">
-        <div className="text-center max-w-lg">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            🚀 DevFlow Analytics
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Track your GitHub activity, coding streaks, and productivity.
-          </p>
-          <LoginButton />
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
-            We only access public data. Never store your token.
-          </p>
+      <div className="relative min-h-screen bg-gray-900 overflow-hidden">
+        {/* LiquidEther Background */}
+        <div className="absolute inset-0">
+          <LiquidEther
+            colors={["#6366f1", "#8b5cf6", "#a855f7"]}
+            autoSpeed={0.3}
+            autoIntensity={1.8}
+            mouseForce={25}
+            cursorSize={120}
+            resolution={0.6}
+            dt={0.016}
+            autoDemo={true}
+            autoResumeDelay={2000}
+            autoRampDuration={1.0}
+            style={{ width: "100%", height: "100%" }}
+          />
+        </div>
+
+        {/* Overlay gradient for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-gray-900/40 pointer-events-none" />
+
+        {/* Login Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+         
+          <div className="w-full max-w-md p-8 bg-transparent backdrop-blur-md rounded-2xl shadow-2xl border border-gray-700/30 mt-16">
+            {/* Header */}
+            {/* <div className="text-center mb-8">
+            <div className="mb-4">
+              <h1 className="text-3xl font-bold text-white mb-2">
+                 DevFlow Analytics
+              </h1>
+              
+            </div>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Track your GitHub activity, coding streaks, and productivity insights.
+            </p>
+          </div> */}
+
+            {/* Login Button */}
+            <LoginButton />
+          </div>
         </div>
       </div>
     );
@@ -272,11 +355,11 @@ export default function App() {
 
   // 🐛 Debug logs
   console.log("🔍 Redux state:", { data, loading, error });
-  console.log("🔍 Render conditions:", { 
-    isLoggedIn, 
-    loading: loading || isLoadingData, 
-    error, 
-    hasData: !!data 
+  console.log("🔍 Render conditions:", {
+    isLoggedIn,
+    loading: loading || isLoadingData,
+    error,
+    hasData: !!data,
   });
 
   // ✅ Show Dashboard if logged in
@@ -284,14 +367,14 @@ export default function App() {
     console.log("🔄 Showing loading spinner");
     return <LoadingSpinner />;
   }
-  
+
   if (error) {
     console.log("❌ Showing error:", error);
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-red-500 p-6 bg-red-100 dark:bg-red-900 rounded-lg">
           <strong>Error:</strong> {error}
-          <button 
+          <button
             onClick={() => {
               dispatch(setError(null));
               if (token) loadData(token);
@@ -319,8 +402,8 @@ export default function App() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <Header 
-              todayCommits={data?.todayCommits || 0} 
+            <Header
+              todayCommits={data?.todayCommits || 0}
               onRefresh={() => {
                 if (!isLoadingData && token) {
                   loadData(token);
@@ -344,25 +427,51 @@ export default function App() {
             <StatCard
               title="Weekly Commits"
               value={data?.totalCommits || 0}
-              subtitle={data?.totalCommits > 10 ? "🚀 Great progress!" : "💪 Keep coding!"}
+              subtitle={
+                data?.totalCommits > 10
+                  ? "🚀 Great progress!"
+                  : "💪 Keep coding!"
+              }
               icon="📦"
-              onClick={() => setActiveStatCard(activeStatCard === "commits" ? null : "commits")}
+              onClick={() =>
+                setActiveStatCard(
+                  activeStatCard === "commits" ? null : "commits"
+                )
+              }
               isActive={activeStatCard === "commits"}
             />
             <StatCard
               title="Current Streak"
               value={`${data?.streak || 0} days`}
-              subtitle={data?.streak >= 7 ? "🔥 On fire!" : data?.streak > 0 ? "💪 Keep going!" : "🌱 Start today!"}
+              subtitle={
+                data?.streak >= 7
+                  ? "🔥 On fire!"
+                  : data?.streak > 0
+                  ? "💪 Keep going!"
+                  : "🌱 Start today!"
+              }
               icon="🔥"
-              onClick={() => setActiveStatCard(activeStatCard === "streak" ? null : "streak")}
+              onClick={() =>
+                setActiveStatCard(activeStatCard === "streak" ? null : "streak")
+              }
               isActive={activeStatCard === "streak"}
             />
             <StatCard
               title="Recent Activity"
               value={data?.totalEventsThisWeek || 0}
-              subtitle={data?.totalEventsThisWeek > 15 ? "📈 Very active" : data?.totalEventsThisWeek > 5 ? "📊 Active" : "🌙 Quiet week"}
+              subtitle={
+                data?.totalEventsThisWeek > 15
+                  ? "📈 Very active"
+                  : data?.totalEventsThisWeek > 5
+                  ? "📊 Active"
+                  : "🌙 Quiet week"
+              }
               icon="💬"
-              onClick={() => setActiveStatCard(activeStatCard === "activity" ? null : "activity")}
+              onClick={() =>
+                setActiveStatCard(
+                  activeStatCard === "activity" ? null : "activity"
+                )
+              }
               isActive={activeStatCard === "activity"}
             />
           </div>
@@ -376,7 +485,9 @@ export default function App() {
           <div className="lg:col-span-2" id="weekly-activity">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Weekly Activity</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  Weekly Activity
+                </h2>
               </div>
               <ActivityChart data={data?.weekly} />
             </div>
@@ -386,7 +497,9 @@ export default function App() {
           <div className="lg:col-span-1" id="recent-activity">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Recent Activity
+                </h2>
                 {data?.recent && data.recent.length > 5 && (
                   <button
                     onClick={() => setShowAllActivity(!showAllActivity)}
@@ -397,7 +510,9 @@ export default function App() {
                 )}
               </div>
               <RecentActivity
-                activities={showAllActivity ? data?.recent : data?.recent?.slice(0, 5)}
+                activities={
+                  showAllActivity ? data?.recent : data?.recent?.slice(0, 5)
+                }
                 showAll={showAllActivity}
                 onToggleShow={setShowAllActivity}
                 totalCount={data?.recent?.length}
@@ -416,7 +531,10 @@ export default function App() {
       <ShareButton statsData={data} />
 
       <style jsx>{`
-        #stats, #goal-tracker, #weekly-activity, #recent-activity {
+        #stats,
+        #goal-tracker,
+        #weekly-activity,
+        #recent-activity {
           scroll-margin-top: 120px;
         }
       `}</style>
